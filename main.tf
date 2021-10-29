@@ -53,6 +53,10 @@ locals {
     "us-south" = {
       "latitude"  = "32.7924",
       "longitude" = "-96.8147"
+    },
+    "br-sao" = {
+      "latitude"  = "-23.5558",
+      "longitude" = "-46.6396"
     }
   }
   site_name   = var.volterra_site_name == "" ? "${var.ibm_instance_name}-site" : var.volterra_site_name
