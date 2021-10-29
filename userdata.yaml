@@ -81,12 +81,17 @@ write_files:
     export KUBECONFIG=/etc/kubernetes/admin.conf
     kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
     kubectl taint nodes --all node-role.kubernetes.io/master-
+    sleep 10
     sed -i 's/apiserver\.key/apiserver\.key\n    - --feature-gates\=RemoveSelfLink\=false/g' /etc/kubernetes/manifests/kube-apiserver.yaml
     kubectl apply -f /etc/kubernetes/manifests/kube-apiserver.yaml
+    sleep 10 
     helm repo add rimusz https://charts.rimusz.net
     helm repo update
     helm upgrade --install hostpath-provisioner --namespace kube-system rimusz/hostpath-provisioner
+    sleep 10
     kubectl apply -f /etc/volterra-site.yaml
+    sleep 10
+    kubectl apply -f /etc/container-demo-runner.yaml
 - owner: root:root
   path: /etc/volterra-site.yaml
   permissions: '0644'
@@ -196,7 +201,7 @@ write_files:
       name: vp-manager
       namespace: ves-system
     spec:
-      replicas: 1 
+      replicas: ${replicas}
       selector:
         matchLabels:
           name: vpm
@@ -269,6 +274,171 @@ write_files:
           resources:
             requests:
               storage: 1Gi
+- owner: root:root
+  path: /etc/container-demo-runner.yaml
+  permissions: '0644'
+  content: |
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: ${demonamespace}
+      labels:
+        name: ${demonamespace}
+    ---
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: diag-container
+      namespace: ${demonamespace}
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: cluster-role-binding-clusterrolebinding-simple
+    subjects:
+      - kind: ServiceAccount
+        name: diag-container
+        namespace: ${demonamespace}
+    roleRef:
+      kind: ClusterRole
+      name: cluster-role-binding-diag-container
+      apiGroup: rbac.authorization.k8s.io
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: cluster-role-binding-diag-container
+    rules: 
+    - apiGroups: [""] 
+      resources: ["pods","services","namespaces","deployments","jobs","statefulsets","persistentvolumeclaims"] 
+      verbs: ["get", "watch", "list"]
+    ---
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: diag-container-config
+      namespace: ${demonamespace}
+    data:
+      allowed_commands: |
+        ["^ping", "^cat /etc/hosts", "^cat /etc/resolv.conf", "^env$", "^ip route$", "^ip addr$", "^ip link$", "^ip neigh", "^netstat", "^dig", "^nc", "^ab", "^siege", "^tcping", "^traceroute", "^tcptraceroute", "^curl", "^whois", "^kubectl", "^iperf", "^sockperf"]
+      host_entries: []
+      http_listen_address: "0.0.0.0"
+      http_listen_port: "8080"
+      ws_listen_address: "0.0.0.0"
+      ws_listen_port: "8080"
+    ---
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: diag-container-app
+      namespace: ${demonamespace}
+    spec:
+      selector:
+        matchLabels:
+          app: diag-container-app
+      replicas: 1
+      template:
+        metadata:
+          labels:
+            app: diag-container-app
+        spec:
+          serviceAccountName: diag-container
+          volumes:
+          - name: diag-container-volume
+            configMap:
+              name: diag-container-config
+          containers:
+          - name: diag-container
+            image: jgruberf5/container-demo-runner:latest
+            ports:
+            - containerPort: 8080
+              protocol: TCP
+            - containerPort: 8080
+              protocol: TCP
+            - containerPort: 5001
+              protocol: TCP
+            volumeMounts:
+            - name: diag-container-volume
+              mountPath: /etc/container-demo-runner
+            env:
+            - name: BANNER
+              value: ${demobanner}
+            - name: BANNER_COLOR
+              value: "${demobannercolor}"
+            - name: BANNER_TEXT_COLOR
+              value: "${demobannertextcolor}"
+    ---
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: diag-container-web-in-cluster
+      namespace: ${demonamespace}
+    spec:
+      type: ClusterIP
+      selector:
+        app: diag-container-app
+      ports:
+      - name: http
+        port: 8080
+        targetPort: 8080
+    ---
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: diag-container-web
+      namespace: ${demonamespace}
+    spec:
+      type: NodePort
+      selector:
+        app: diag-container-app
+      ports:
+      - name: http
+        port: 8080
+        nodePort: 30080
+        targetPort: 8080
+    ---
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: diag-container-iperf-in-cluster
+      namespace: ${demonamespace}
+    spec:
+      type: ClusterIP
+      selector:
+        app: diag-container-app
+      ports:
+      - name: iperf
+        port: 5001
+        targetPort: 5001
+    ---
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: diag-container-sockperf-in-cluster
+      namespace: ${demonamespace}
+    spec:
+      type: ClusterIP
+      selector:
+        app: diag-container-app
+      ports:
+      - name: sockperf
+        port: 11111
+        targetPort: 11111
+    ---
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: diag-container-sockperf
+      namespace: ${demonamespace}
+    spec:
+      type: NodePort
+      selector:
+        app: diag-container-app
+      ports:
+      - name: sockperf
+        port: 11111
+        nodePort: 31111
+        targetPort: 11111
 runcmd:
   - [ /etc/platform_install.sh ]
   - [ /etc/k8s_install.sh ]

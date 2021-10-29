@@ -52,7 +52,7 @@ variable "ibm_subnet_id" {
 ##################################################################################
 # instance_name - The name of VPC VSI for the K8s server
 ##################################################################################
-variable "instance_name" {
+variable "ibm_instance_name" {
   default     = "k8s-01"
   description = "The name of VPC VSI for the K8s server"
 }
@@ -60,7 +60,7 @@ variable "instance_name" {
 ##################################################################################
 # podcidr - The CIDR of the internal POD network
 ##################################################################################
-variable "podcidr" {
+variable "k8s_podcidr" {
   default     = "172.15.0.0/16"
   description = "The CIDR of the internal POD network"
 }
@@ -68,7 +68,7 @@ variable "podcidr" {
 ##################################################################################
 # apifqdn - The FQDN to add to the K8s API certificate
 ##################################################################################
-variable "apifqdn" {
+variable "k8s_apifqdn" {
   default     = "k8s-01.local"
   description = "The FQDN to add to the K8s API certificate"
 }
@@ -83,6 +83,15 @@ variable "volterra_tenant_name" {
 }
 
 ##################################################################################
+# volterra_api_token - The API token to use to register with Volterra
+##################################################################################
+variable "volterra_api_token" {
+  type        = string
+  default     = ""
+  description = "The API token to use to register with Volterra"
+}
+
+##################################################################################
 # volterra_site_name - The Volterra Site name for this VPC
 ##################################################################################
 variable "volterra_site_name" {
@@ -92,10 +101,64 @@ variable "volterra_site_name" {
 }
 
 ##################################################################################
-# volterra_site_token - The site registration token
+# volterra_fleet_label - The Volterra Fleet label for this VPC
 ##################################################################################
-variable "volterra_site_token" {
+variable "volterra_fleet_label" {
   type        = string
   default     = ""
-  description = "The site registration token"
+  description = "The Volterra Fleet label for this VPC"
+}
+
+##################################################################################
+# volterra_ssl_tunnels - Use SSL tunnels to connect to Volterra
+##################################################################################
+variable "volterra_ssl_tunnels" {
+  type        = bool
+  default     = true
+  description = "Use SSL tunnels to connect to Volterra"
+}
+
+##################################################################################
+# volterra_ipsec_tunnels - Use IPSEC tunnels to connect to Volterra
+##################################################################################
+variable "volterra_ipsec_tunnels" {
+  type        = bool
+  default     = true
+  description = "Use IPSEC tunnels to connect to Volterra"
+}
+
+##################################################################################
+# demo_namespace - 
+##################################################################################
+variable "demo_namespace" {
+  type        = string
+  default     = "diag-container"
+  description = ""
+}
+
+##################################################################################
+# demo_banner_text - Demo container banner text to display
+##################################################################################
+variable "demo_banner_text" {
+  type        = string
+  default     = ""
+  description = "Demo container banner text to display"
+}
+
+##################################################################################
+# demo_banner_color - Demo container banner background color
+##################################################################################
+variable "demo_banner_color" {
+  type        = string
+  default     = "e71b2a"
+  description = "Demo container banner background color"
+}
+
+##################################################################################
+# demo_banner_text_color - Demo container banner text color
+##################################################################################
+variable "demo_banner_text_color" {
+  type        = string
+  default     = "ffffff"
+  description = "Demo container banner text color"
 }
