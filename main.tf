@@ -61,7 +61,7 @@ locals {
   cluster_size = 1
   #cluster_masters = var.volterra_cluster_size > 2 ? 3 : 1
   cluster_masters  = 1
-  demo_banner_text = var.demo_banner_text == "" ? "Welcome to ${var.volterra_site_name} K8s cluster" : var.demo_banner_text
+  demo_banner_text = var.demo_banner_text == "" ? "Welcome to ${var.volterra_site_name} cluster" : var.demo_banner_text
 }
 
 resource "null_resource" "site" {
