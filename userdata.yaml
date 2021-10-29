@@ -72,7 +72,6 @@ write_files:
     systemctl enable kubelet
     systemctl status kubelet
     # fix /etc/kubernetes/manifests/kube-apiserver.yaml for hostpath
-    sed -i 's/apiserver\.key/apiserver\.key\n    - --feature-gates\=RemoveSelfLink\=false/g' /etc/kubernetes/manifests/kube-apiserver.yaml
     kubeadm init --pod-network-cidr=${podcidr} --control-plane-endpoint=${apifqdn} --apiserver-advertise-address=$(ip route|grep default|grep src|cut -d' ' -f9)
     mkdir -p /root/.kube
     cp /etc/kubernetes/admin.conf /root/.kube/config
@@ -82,6 +81,8 @@ write_files:
     export KUBECONFIG=/etc/kubernetes/admin.conf
     kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
     kubectl taint nodes --all node-role.kubernetes.io/master-
+    sed -i 's/apiserver\.key/apiserver\.key\n    - --feature-gates\=RemoveSelfLink\=false/g' /etc/kubernetes/manifests/kube-apiserver.yaml
+    kubectl apply -f /etc/kubernetes/manifests/kube-apiserver.yaml
     helm repo add rimusz https://charts.rimusz.net
     helm repo update
     helm upgrade --install hostpath-provisioner --namespace kube-system rimusz/hostpath-provisioner
@@ -174,20 +175,20 @@ write_files:
       name: vpm-cfg
       namespace: ves-system
     data:
-    config.yaml: |
-      Vpm:
-        ClusterName: ${sitename}
-        ClusterType: ce
-        Config: /etc/vpm/config.yaml
-        DisableModules: ["dictator", "recruiter"]
-        Latitude: ${latitude}
-        Longitude: ${longitude}
-        MauriceEndpoint: https://register.ves.volterra.io
-        MauricePrivateEndpoint: https://register-tls.ves.volterra.io
-        PrivateNIC: eth0
-        SkipStages: ["osSetup", "etcd", "kubelet", "master", "voucher", "workload", "controlWorkload"]
-        Token: ${sitetoken}
-        CertifiedHardware: k8s-minikube-voltmesh
+      config.yaml: |
+        Vpm:
+          ClusterName: ${sitename}
+          ClusterType: ce
+          Config: /etc/vpm/config.yaml
+          DisableModules: ["dictator", "recruiter"]
+          Latitude: ${latitude}
+          Longitude: ${longitude}
+          MauriceEndpoint: https://register.ves.volterra.io
+          MauricePrivateEndpoint: https://register-tls.ves.volterra.io
+          PrivateNIC: eth0
+          SkipStages: ["osSetup", "etcd", "kubelet", "master", "voucher", "workload", "controlWorkload"]
+          Token: ${sitetoken}
+          CertifiedHardware: k8s-minikube-voltmesh
     ---
     apiVersion: apps/v1
     kind: StatefulSet
