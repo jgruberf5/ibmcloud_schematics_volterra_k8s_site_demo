@@ -65,7 +65,7 @@ locals {
   cluster_size = 1
   #cluster_masters = var.volterra_cluster_size > 2 ? 3 : 1
   cluster_masters  = 1
-  demo_banner_text = var.demo_banner_text == "" ? "Welcome to ${var.volterra_site_name} cluster" : var.demo_banner_text
+  demo_banner_text = var.demo_banner_text == "" ? "Welcome to ${local.site_name} cluster" : var.demo_banner_text
 }
 
 resource "null_resource" "site" {
@@ -93,7 +93,7 @@ resource "null_resource" "site" {
 }
 
 data "local_file" "site_token" {
-  filename   = "${path.module}/${var.volterra_site_name}_site_token.txt"
+  filename   = "${path.module}/${local.site_name}_site_token.txt"
   depends_on = [null_resource.site]
 }
 
