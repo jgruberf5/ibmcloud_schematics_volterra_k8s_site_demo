@@ -60,7 +60,7 @@ locals {
     }
   }
   site_name   = var.volterra_site_name == "" ? "${var.ibm_instance_name}-site" : var.volterra_site_name
-  fleet_label = var.volterra_fleet_label == "" ? "${var.volterra_site_name}-fleet" : var.volterra_fleet_label
+  fleet_label = var.volterra_fleet_label == "" ? "${local.site_name}-fleet" : var.volterra_fleet_label
   #cluster_size = var.volterra_cluster_size
   cluster_size = 1
   #cluster_masters = var.volterra_cluster_size > 2 ? 3 : 1
