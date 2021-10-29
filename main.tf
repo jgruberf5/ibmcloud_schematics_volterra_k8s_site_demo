@@ -1,0 +1,98 @@
+data "ibm_is_ssh_key" "ssh_key" {
+  name = var.ibm_ssh_key_name
+}
+
+data "ibm_is_subnet" "subnet" {
+  identifier = var.ibm_subnet_id
+}
+
+data "ibm_is_vpc" "k8s_vpc" {
+  name = data.ibm_is_subnet.subnet.vpc_name
+}
+
+data "ibm_is_instance_profile" "instance_profile" {
+  name = var.ibm_profile
+}
+
+# lookup image name for a custom image in region if we need it
+data "ibm_is_image" "ubuntu" {
+  name = "ibm-ubuntu-20-04-minimal-amd64-2"
+}
+
+locals {
+  # user admin_password if supplied, else set a random password
+  vpc_gen2_region_location_map = {
+    "au-syd" = {
+      "latitude"  = "-33.8688",
+      "longitude" = "151.2093"
+    },
+    "ca-tor" = {
+      "latitude"  = "43.6532",
+      "longitude" = "-79.3832"
+    },
+    "eu-de" = {
+      "latitude"  = "50.1109",
+      "longitude" = "8.6821"
+    },
+    "eu-gb" = {
+      "latitude"  = "51.5074",
+      "longitude" = "0.1278"
+    },
+    "jp-osa" = {
+      "latitude"  = "34.6937",
+      "longitude" = "135.5023"
+    },
+    "jp-tok" = {
+      "latitude"  = "35.6762",
+      "longitude" = "139.6503"
+    },
+    "us-east" = {
+      "latitude"  = "38.9072",
+      "longitude" = "-77.0369"
+    },
+    "us-south" = {
+      "latitude"  = "32.7924",
+      "longitude" = "-96.8147"
+    }
+  }
+}
+
+data "template_file" "k8s_userdata" {
+  template = file("${path.module}/userdata.yaml")
+  vars = {
+    podcidr       = var.podcidr
+    instance_name = var.instance_name
+    apifqdn       = var.apifqdn
+    sitename      = var.volterra_site_name
+    latitude      = lookup(local.vpc_gen2_region_location_map, var.ibm_region).latitude
+    longitude     = lookup(local.vpc_gen2_region_location_map, var.ibm_region).longitude
+    sitetoken     = var.volterra_site_token
+  }
+}
+
+# create server 01
+resource "ibm_is_instance" "k8s_instance" {
+  name           = var.instance_name
+  resource_group = data.ibm_resource_group.group.id
+  image          = data.ibm_is_image.ubuntu.id
+  profile        = data.ibm_is_instance_profile.instance_profile.id
+  primary_network_interface {
+    name            = "internal"
+    subnet          = data.ibm_is_subnet.subnet.id
+    security_groups = [data.ibm_is_vpc.k8s_vpc.default_security_group]
+  }
+  vpc       = data.ibm_is_subnet.subnet.vpc
+  zone      = data.ibm_is_subnet.subnet.zone
+  keys      = [data.ibm_is_ssh_key.ssh_key.id]
+  user_data = data.template_file.k8s_userdata.rendered
+  timeouts {
+    create = "60m"
+    delete = "120m"
+  }
+}
+
+resource "ibm_is_floating_ip" "floating_ip" {
+  name           = "fip-${var.instance_name}-k8s"
+  resource_group = data.ibm_resource_group.group.id
+  target         = ibm_is_instance.k8s_instance.primary_network_interface.0.id
+}
