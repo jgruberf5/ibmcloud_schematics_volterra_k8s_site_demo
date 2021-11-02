@@ -349,7 +349,7 @@ write_files:
               name: diag-container-config
           containers:
           - name: diag-container
-            image: jgruberf5/container-demo-runner:latest
+            image: ${democontaineriamge}
             ports:
             - containerPort: 8080
               protocol: TCP

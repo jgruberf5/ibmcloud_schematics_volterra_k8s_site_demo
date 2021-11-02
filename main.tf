@@ -108,6 +108,7 @@ data "template_file" "k8s_userdata" {
     latitude            = lookup(local.vpc_gen2_region_location_map, var.ibm_region).latitude
     longitude           = lookup(local.vpc_gen2_region_location_map, var.ibm_region).longitude
     sitetoken           = data.local_file.site_token.content
+    democontaineriamge  = var.demo_container_image
     demonamespace       = var.demo_namespace
     demobanner          = local.demo_banner_text
     demobannercolor     = var.demo_banner_color

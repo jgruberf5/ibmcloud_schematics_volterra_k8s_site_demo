@@ -128,12 +128,21 @@ variable "volterra_ipsec_tunnels" {
 }
 
 ##################################################################################
-# demo_namespace - 
+# demo_container_image
+##################################################################################
+variable "demo_container_image" {
+  type        = string
+  default     = "jgruberf5/container-demo-runner:latest"
+  description = ""
+}
+
+##################################################################################
+# demo_namespace - Namespace to deploy the diag container
 ##################################################################################
 variable "demo_namespace" {
   type        = string
   default     = "diag-container"
-  description = ""
+  description = "Namespace to deploy the diag container"
 }
 
 ##################################################################################
